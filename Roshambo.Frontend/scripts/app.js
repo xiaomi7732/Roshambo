@@ -74,6 +74,7 @@ function generateNextMoves(actionList) {
 
 function start() {
     highlightUserMove(null);
+    roundResultElement.innerText = null;
     stopAt = undefined;
     rotateComputerMove();
 }
@@ -112,6 +113,7 @@ async function goWithAsync(action) {
     const body = await postResponse.json();
     console.log(JSON.stringify(body));
 
+    highlightUserMove(null);
     highlightUserMove(action);
 
     const computerMoveName = body.round.computerMove.name;
