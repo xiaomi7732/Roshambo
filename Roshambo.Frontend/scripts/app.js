@@ -1,4 +1,5 @@
-const backendBaseUrl = "http://localhost:5295";
+// const backendBaseUrl = "http://localhost:5295";
+const backendBaseUrl = "https://roshamboapp.azurewebsites.net";
 
 const humanWinningElement = document.getElementById("humanWinCount");
 const computerWinningElement = document.getElementById("computerWinCount");
