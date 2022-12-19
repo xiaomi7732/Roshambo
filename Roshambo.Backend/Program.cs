@@ -10,10 +10,15 @@ builder.Services.Configure<JsonOptions>(options =>
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
+builder.Services.AddCors(options => options.AddDefaultPolicy(builder =>{
+    builder.AllowAnyHeader().WithOrigins("http://127.0.0.1:5500");
+}));
+
 builder.Services.AddTransient<GlobalStatisticsService>();
 builder.Services.AddTransient<RoshamboService>();
 
 var app = builder.Build();
+app.UseCors();
 
 app.MapGet("/", async (CancellationToken cancellationToken, GlobalStatisticsService globalStat) =>
 {
@@ -25,7 +30,7 @@ app.MapGet("/", async (CancellationToken cancellationToken, GlobalStatisticsServ
     };
 });
 
-app.MapGet("/rounds/{actionName}", async (
+app.MapPost("/rounds/{actionName}", async (
     [FromRoute] string actionName,
     [FromServices] RoshamboService roshamboService,
     [FromServices] GlobalStatisticsService globalStatisticsService,
@@ -42,6 +47,7 @@ app.MapGet("/rounds/{actionName}", async (
             {
                 Result = roundResult,
                 ComputerMove = computerMove.ToAction(),
+                UserMove = userOption.ToAction(),
                 ComputerWinning = globalStatistics.ComputerWinning,
                 HumanWinning = globalStatistics.HumanWinning,
                 Draw = globalStatistics.Draw,
