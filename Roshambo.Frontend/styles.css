@@ -1,0 +1,10 @@
+.move-image
+{
+    width: 210px;
+    height: 200px;
+}
+
+.user-move
+{
+    cursor: pointer;
+}

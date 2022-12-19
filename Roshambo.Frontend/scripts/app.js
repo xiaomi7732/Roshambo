@@ -9,6 +9,7 @@ const roundResultElement = document.getElementById("roundResult");
 
 let stopAt = undefined;
 let computerMoveCursor = 0;
+let rotationStopper = -1;
 
 const resources =
 {
@@ -55,6 +56,7 @@ function generateNextMoves(actionList) {
     actionList.forEach((item) => {
         let img = document.createElement('img');
         img.src = resources[item.name].img;
+        img.className = "move-image user-move";
         img.addEventListener("click", async () => {
             await goWithAsync(item.name);
         });
@@ -69,9 +71,12 @@ function start() {
 }
 
 function rotateComputerMove() {
-    var intervalId = setInterval(() => {
-        console.log(`Interval Id: ${intervalId}`);
+    if (rotationStopper != -1) {
+        clearInterval(rotationStopper);
+        rotationStopper = -1;
+    }
 
+    rotationStopper = setInterval(() => {
         const resKeys = Object.keys(resources);
         const targetKey = resKeys[computerMoveCursor];
         const targetRes = resources[targetKey];
@@ -79,7 +84,8 @@ function rotateComputerMove() {
         computerMoveImg.src = targetRes.img;
 
         if (stopAt !== undefined && targetKey === stopAt) {
-            clearInterval(intervalId);
+            clearInterval(rotationStopper);
+            rotationStopper = -1;
         }
         computerMoveCursor = (computerMoveCursor + 1) % 3;
     }, 100);
