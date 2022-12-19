@@ -7,7 +7,7 @@ const computerMoveImg = document.getElementById("computerMoveImg");
 const resetButton = document.getElementById("reset");
 const roundResultElement = document.getElementById("roundResult");
 
-let isRotateComputerMove = true;
+let stopAt = undefined;
 let computerMoveCursor = 0;
 
 const resources =
@@ -64,26 +64,25 @@ function generateNextMoves(actionList) {
 }
 
 function start() {
-    isRotateComputerMove = true;
+    stopAt = undefined;
     rotateComputerMove();
 }
 
 function rotateComputerMove() {
-    if (isRotateComputerMove) {
-        let timeoutHandle = setTimeout(() => {
-            const resKeys = Object.keys(resources);
-            const targetRes = resources[resKeys[computerMoveCursor]];
+    var intervalId = setInterval(() => {
+        console.log(`Interval Id: ${intervalId}`);
 
-            computerMoveImg.src = targetRes.img;
-            computerMoveCursor = (computerMoveCursor + 1) % 3;
+        const resKeys = Object.keys(resources);
+        const targetKey = resKeys[computerMoveCursor];
+        const targetRes = resources[targetKey];
 
-            if (!rotateComputerMove) {
-                return;
-            }
-            rotateComputerMove();
-        }, 100);
-        timeoutHandle = null;
-    }
+        computerMoveImg.src = targetRes.img;
+
+        if (stopAt !== undefined && targetKey === stopAt) {
+            clearInterval(intervalId);
+        }
+        computerMoveCursor = (computerMoveCursor + 1) % 3;
+    }, 100);
 }
 
 async function goWithAsync(action) {
@@ -96,9 +95,10 @@ async function goWithAsync(action) {
 
     const body = await postResponse.json();
     console.log(JSON.stringify(body));
-    isRotateComputerMove = false;
 
     const computerMoveName = body.round.computerMove.name;
+    stopAt = computerMoveName;
+
     const roundResult = body.round.result;
 
     const computerMoveResource = resources[computerMoveName];
