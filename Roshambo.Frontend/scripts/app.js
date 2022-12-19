@@ -1,5 +1,5 @@
-// const backendBaseUrl = "http://localhost:5295";
-const backendBaseUrl = "https://roshamboapp.azurewebsites.net";
+const backendBaseUrl = "http://localhost:5295";
+// const backendBaseUrl = "https://roshamboapp.azurewebsites.net";
 
 const humanWinningElement = document.getElementById("humanWinCount");
 const computerWinningElement = document.getElementById("computerWinCount");
@@ -66,7 +66,7 @@ function generateNextMoves(actionList) {
         img.setAttribute("key", item.name);
         img.alt = "An image for " + item.name;
         img.addEventListener("click", async () => {
-            await goWithAsync(item.name);
+            await goWithAsync(item);
         });
 
         nextMoveContainerElement.appendChild(img);
@@ -104,8 +104,8 @@ function rotateComputerMove() {
 
 
 async function goWithAsync(action) {
-    const postResponse = await fetch(backendBaseUrl + "/rounds/" + action, {
-        method: "POST",
+    const postResponse = await fetch(backendBaseUrl + action.href, {
+        method: action.method,
         headers: {
             "Content-Type": "application/json"
         },
@@ -115,7 +115,7 @@ async function goWithAsync(action) {
     console.log(JSON.stringify(body));
 
     highlightUserMove(null);
-    highlightUserMove(action);
+    highlightUserMove(action.name);
 
     const computerMoveName = body.round.computerMove.name;
     stopAt = computerMoveName;
