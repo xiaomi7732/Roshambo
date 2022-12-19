@@ -92,7 +92,7 @@ internal class GlobalStatisticsService
 
     private async Task<(ulong humanWinning, ulong computerWinning, ulong drawCount)> ReadAsync(CancellationToken cancellationToken)
     {
-        string resultText = await File.ReadAllTextAsync(FileName, Encoding.UTF8, cancellationToken).ConfigureAwait(false);
+        string resultText = await File.ReadAllTextAsync(GetFileResultFilePath(), Encoding.UTF8, cancellationToken).ConfigureAwait(false);
         string[] resultTokens = resultText.Split(',', StringSplitOptions.RemoveEmptyEntries);
         return (ulong.Parse(resultTokens[0]), ulong.Parse(resultTokens[1]), ulong.Parse(resultTokens[2]));
     }
@@ -100,6 +100,9 @@ internal class GlobalStatisticsService
     private async Task WriterAsync(ulong humanWinning, ulong computerWinning, ulong drawCount, CancellationToken cancellationToken)
     {
         string resultText = string.Join(',', humanWinning, computerWinning, drawCount);
-        await File.WriteAllTextAsync(FileName, resultText, Encoding.UTF8, cancellationToken).ConfigureAwait(false);
+        await File.WriteAllTextAsync(GetFileResultFilePath(), resultText, Encoding.UTF8, cancellationToken).ConfigureAwait(false);
     }
+
+    private string GetFileResultFilePath()
+        => Path.GetFullPath(Path.Combine(Path.GetTempPath(), FileName));
 }
