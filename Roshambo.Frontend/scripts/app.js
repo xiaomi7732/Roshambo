@@ -7,6 +7,8 @@ const computerMoveImg = document.getElementById("computerMoveImg");
 const resetButton = document.getElementById("reset");
 const roundResultElement = document.getElementById("roundResult");
 
+const DYNAMIC_MOVES = "dynamicMoves";
+
 let stopAt = undefined;
 let computerMoveCursor = 0;
 let rotationStopper = -1;
@@ -16,16 +18,19 @@ const resources =
     "rock": {
         "displayIndex": 10,
         "img": "images/Rock.png",
+        "gray_img": "images/Rock_Gray.png",
         "action": "paper",
     },
     "scissor": {
         "displayIndex": 20,
         "img": "images/Scissor.png",
+        "gray_img": "images/Scissor_Gray.png",
         "action": "scissor",
     },
     "paper": {
         "displayIndex": 30,
         "img": "images/Paper.png",
+        "gray_img": "images/Paper_Gray.png",
         "action": "paper",
     },
 };
@@ -52,11 +57,13 @@ window.addEventListener("load", async () => {
 });
 
 function generateNextMoves(actionList) {
-    const nextMoveContainerElement = document.getElementById("dynamicMoves");
+    const nextMoveContainerElement = document.getElementById(DYNAMIC_MOVES);
     actionList.forEach((item) => {
         let img = document.createElement('img');
         img.src = resources[item.name].img;
         img.className = "move-image user-move";
+        img.setAttribute("key", item.name);
+        img.alt = "An image for " + item.name;
         img.addEventListener("click", async () => {
             await goWithAsync(item.name);
         });
@@ -66,6 +73,7 @@ function generateNextMoves(actionList) {
 }
 
 function start() {
+    highlightUserMove(null);
     stopAt = undefined;
     rotateComputerMove();
 }
@@ -91,6 +99,8 @@ function rotateComputerMove() {
     }, 100);
 }
 
+
+
 async function goWithAsync(action) {
     const postResponse = await fetch(backendBaseUrl + "/rounds/" + action, {
         method: "POST",
@@ -101,6 +111,8 @@ async function goWithAsync(action) {
 
     const body = await postResponse.json();
     console.log(JSON.stringify(body));
+
+    highlightUserMove(action);
 
     const computerMoveName = body.round.computerMove.name;
     stopAt = computerMoveName;
@@ -134,4 +146,21 @@ async function goWithAsync(action) {
     humanWinningElement.innerText = body.statistics.humanWinning;
     computerWinningElement.innerText = body.statistics.computerWinning;
     drawElement.innerText = body.statistics.draw;
+}
+
+function highlightUserMove(action) {
+    const nextMoveContainerElement = document.getElementById(DYNAMIC_MOVES);
+    const imgElements = nextMoveContainerElement.getElementsByTagName("img");
+
+    for (const imgElement of imgElements) {
+        const key = imgElement.getAttribute('key');
+        if (action === null) {
+            imgElement.src = resources[key].img;
+            continue;
+        }
+
+        if (key !== action) {
+            imgElement.src = resources[key].gray_img;
+        }
+    }
 }
