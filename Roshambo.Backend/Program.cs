@@ -11,7 +11,10 @@ builder.Services.Configure<JsonOptions>(options =>
 });
 
 builder.Services.AddCors(options => options.AddDefaultPolicy(builder =>{
-    builder.AllowAnyHeader().WithOrigins("http://127.0.0.1:5500");
+    builder
+        .WithOrigins("http://127.0.0.1:5500")
+        .WithHeaders("content-type")
+        .WithMethods("GET", "POST", "OPTIONS");
 }));
 
 builder.Services.AddTransient<GlobalStatisticsService>();
