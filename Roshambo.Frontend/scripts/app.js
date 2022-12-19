@@ -123,4 +123,9 @@ async function goWithAsync(action) {
     setTimeout(() => {
         computerMoveImg.src = computerMoveResource.img;
     }, 100);
+
+    // TODO: Reuse
+    humanWinningElement.innerText = body.statistics.humanWinning;
+    computerWinningElement.innerText = body.statistics.computerWinning;
+    drawElement.innerText = body.statistics.draw;
 }

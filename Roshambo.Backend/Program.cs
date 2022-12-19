@@ -38,7 +38,7 @@ app.MapPost("/rounds/{actionName}", async (
 {
     if (Enum.TryParse<RoshamboOption>(actionName, ignoreCase: true, out RoshamboOption userOption))
     {
-        (RoshamboResult roundResult, RoshamboOption computerMove) = roshamboService.Go(userOption);
+        (RoshamboResult roundResult, RoshamboOption computerMove) = await roshamboService.GoAsync(userOption, cancellationToken);
         GlobalStatistics globalStatistics = await globalStatisticsService.GetGlobalStatisticsAsync(cancellationToken).ConfigureAwait(false);
 
         return new
@@ -48,11 +48,9 @@ app.MapPost("/rounds/{actionName}", async (
                 Result = roundResult,
                 ComputerMove = computerMove.ToAction(),
                 UserMove = userOption.ToAction(),
-                ComputerWinning = globalStatistics.ComputerWinning,
-                HumanWinning = globalStatistics.HumanWinning,
-                Draw = globalStatistics.Draw,
             },
             Actions = GetRelActions(),
+            Statistics = globalStatistics,
         };
     }
     throw new InvalidOperationException($"Invalid action name of {actionName}");
