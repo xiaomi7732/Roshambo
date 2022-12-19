@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+    <title>Roshambo</title>
+    <link rel="stylesheet" href="./styles.css" />
+</head>
+<script src="./scripts/app.js" defer type="text/javascript"></script>
+
+<body>
+    <div class="page-content">
+        <div id='page-header'>
+            <h1>Code w/ Saar RESTful API Example - Roshambo</h1>
+            <div class='space'></div>
+            <div>
+                <span><a href='https://www.codewithsaar.com' target='_blank' alt='Home' title='Home'>🏠</a></span> |
+                <span><a href='https://dep.codewithsaar.com' target='_blank' alt='Dependency Analyzer'
+                        title='Dependency Analyzer'>📶</a></span> |
+                <span><a href='https://fishcard.codewithsaar.net' target='_blank' alt='Fishcard'
+                        title='Fishcard'>🐠</a></span> |
+                <span><a href='https://stack.codewithsaar.net' target='_blank' alt='StackBeauty'
+                        title='StackBeauty'>🖼️</a></span>
+            </div>
+        </div>
+
+        <div id="statContainer">
+            <h2>Statistics</h2>
+            <div>In this world, ever since the server starts:</div>
+            <div class="stat-line">
+                <div class="stat-title">Computer Winning:</div>
+                <div class="stat-value" id="computerWinCount"></div>
+            </div>
+
+            <div class="stat-line">
+                <div class="stat-title">Human Winning:</div>
+                <div class="stat-value" id="humanWinCount"></div>
+            </div>
+
+            <div class="stat-line">
+                <div class="stat-title">Draw:</div>
+                <div class="stat-value" id="draw"></div>
+            </div>
+        </div>
+
+
+        <div id="resultContainer">
+            <h2>Computer Move:</h2>
+            <img src="" id="computerMoveImg" class="move-image" />
+        </div>
+
+        <div id="roundResult"></div>
+
+        <div id="actionContainer">
+            <h2>What's your move:</h2>
+            <div id="dynamicMoves">
+            </div>
+        </div>
+
+        <button id="reset">Start another round</button>
+
+        <div class="source-code-section">
+            <a href="https://github.com/xiaomi7732/Roshambo" title="Source code." target="_blank">🔗 Find source code on GitHub</a>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,109 @@
+:root {
+    --normal-gap: 8px;
+    --large-gap: 16px;
+    --footer: 64px;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 12px;
+    display: flex;
+    justify-content: center;
+    background-color: #222;
+}
+
+a {
+    text-decoration: none;
+    color:rgb(10, 97, 173);
+}
+
+.page-content {
+    display: flex;
+    flex-direction: column;
+    width: 600px;
+    background-color: white;
+    padding: var(--large-gap);
+    padding-bottom: var(--footer);
+}
+
+h1 {
+    font-size: 18px;
+}
+
+h2 {
+    font-size: 14px;
+}
+
+/* Header */
+#page-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.space {
+    flex-grow: 2;
+}
+
+/*Statistics*/
+#statContainer {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-line {
+    display: flex;
+    flex-direction: row;
+}
+
+.stat-title {
+    font-weight: bold;
+}
+
+.stat-value {
+    font-weight: lighter;
+    margin-left: var(--normal-gap);
+}
+
+/* Computer Move */
+#resultContainer {
+    display: flex;
+    flex-direction: column;
+    justify-self: stretch;
+    align-content: center;
+}
+
+/* Round result */
+#roundResult {
+    display: flex;
+    font-size: 48px;
+    justify-self: stretch;
+    justify-content: center;
+}
+
+/* Action Container */
+#actionContainer
+{
+    margin-bottom: var(--large-gap);
+}
+
+.move-image {
+    width: 175px;
+    height: 175px;
+}
+
+.user-move {
+    cursor: pointer;
+}
+
+button {
+    background-color: rgb(10, 97, 173);
+    /* Green */
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+}
