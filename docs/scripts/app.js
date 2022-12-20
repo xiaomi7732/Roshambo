@@ -1,3 +1,4 @@
+// const backendBaseUrl = "https://localhost:7255";
 const backendBaseUrl = "https://roshamboapp.azurewebsites.net";
 const USER_ID = "user-id";
 
@@ -12,6 +13,9 @@ const userDrawElement = document.getElementById("userDraw");
 const computerMoveImg = document.getElementById("computerMoveImg");
 const resetButton = document.getElementById("reset");
 const roundResultElement = document.getElementById("roundResult");
+
+const splashElement = document.getElementById("splash");
+const pageContentElement = document.getElementById("page-content");
 
 const DYNAMIC_MOVES = "dynamicMoves";
 
@@ -79,6 +83,9 @@ window.addEventListener("load", async () => {
         resetButton.addEventListener("click", () => {
             start();
         });
+
+        splashElement.style.display = "none";
+        pageContentElement.className = "page-content";
 
         start();
     } catch (ex) {

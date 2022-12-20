@@ -14,7 +14,7 @@ body {
 
 a {
     text-decoration: none;
-    color:rgb(10, 97, 173);
+    color: rgb(10, 97, 173);
 }
 
 .page-content {
@@ -82,8 +82,7 @@ h2 {
 }
 
 /* Action Container */
-#actionContainer
-{
+#actionContainer {
     margin-bottom: var(--large-gap);
 }
 
@@ -106,4 +105,19 @@ button {
     text-decoration: none;
     display: inline-block;
     font-size: 16px;
+}
+
+#splash
+{
+    background-color: white;
+    padding: var(--large-gap);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-top: var(--large-gap);
+}
+
+.removed {
+    display: none;
 }
