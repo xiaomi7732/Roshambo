@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
 using Roshambo.Models;
 
 namespace Roshambo.Services;
@@ -7,13 +6,16 @@ namespace Roshambo.Services;
 internal sealed class StatisticsService : IAsyncDisposable
 {
     private static readonly SemaphoreSlim _fileLock = new SemaphoreSlim(1, 1);
+    private readonly ResultStorageService _resultStore;
     private readonly ILogger<StatisticsService> _logger;
-    private const string FileName = "Result.csv"; // Human Win, Computer Win, Draw
 
     private ConcurrentDictionary<UserId, (ulong, ulong, ulong)>? _inMemoryCache = null;
 
-    public StatisticsService(ILogger<StatisticsService> logger)
+    public StatisticsService(
+        ResultStorageService resultStore,
+        ILogger<StatisticsService> logger)
     {
+        _resultStore = resultStore ?? throw new ArgumentNullException(nameof(resultStore));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -155,34 +157,8 @@ internal sealed class StatisticsService : IAsyncDisposable
         }
     }
 
-    private async IAsyncEnumerable<(UserId key, ulong humanWinning, ulong computerWinning, ulong drawCount)> ReadLinesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
-    {
-        string fileName = GetFileResultFilePath();
-        using Stream inputtingStream = File.OpenRead(fileName);
-        using StreamReader reader = new StreamReader(inputtingStream);
-        string? line = await reader.ReadLineAsync().ConfigureAwait(false);
-        _logger.LogInformation("Read line from result file: {0}, line: {1}", fileName, line);
-        if (line is null)
-        {
-            yield break;
-        }
-
-        yield return ParseLine(line);
-    }
-
-    private (UserId key, ulong humanWinning, ulong computerWinning, ulong drawCount) ParseLine(string line)
-    {
-        string[] resultTokens = line.Split(',', StringSplitOptions.RemoveEmptyEntries);
-        if (resultTokens.Length == 3) // Old format
-        {
-            return (UserId.Anonymous, ulong.Parse(resultTokens[0]), ulong.Parse(resultTokens[1]), ulong.Parse(resultTokens[2]));
-        }
-        else if (resultTokens.Length == 4)
-        {
-            return (new UserId(resultTokens[0]), ulong.Parse(resultTokens[1]), ulong.Parse(resultTokens[2]), ulong.Parse(resultTokens[3]));
-        }
-        throw new InvalidCastException($"Can't deserialize result line: {line}");
-    }
+    private IAsyncEnumerable<(UserId key, ulong humanWinning, ulong computerWinning, ulong drawCount)> ReadLinesAsync(CancellationToken cancellationToken) 
+        => _resultStore.LoadResultAsync(cancellationToken);
 
     private async Task WriterAsync(CancellationToken cancellationToken)
     {
@@ -196,28 +172,13 @@ internal sealed class StatisticsService : IAsyncDisposable
         {
             Dictionary<UserId, (ulong, ulong, ulong)> dictClone = new Dictionary<UserId, (ulong, ulong, ulong)>(_inMemoryCache);
 
-            string writingFileName = Path.GetTempFileName();
-            using (Stream outputStream = File.OpenWrite(writingFileName))
-            using (StreamWriter writer = new StreamWriter(outputStream))
-            {
-                string? line = null;
-                foreach (KeyValuePair<UserId, (ulong HumanWinning, ulong ComputerWinning, ulong Draw)> item in dictClone)
-                {
-                    line = string.Join(',', item.Key.Value, item.Value.HumanWinning, item.Value.ComputerWinning, item.Value.Draw);
-                    await writer.WriteLineAsync(line).ConfigureAwait(false);
-                }
-            }
-
-            File.Move(writingFileName, GetFileResultFilePath(), overwrite: true);
+            await _resultStore.SaveResultAsync(dictClone.Select(item => (item.Key, item.Value.Item1, item.Value.Item2, item.Value.Item3)), cancellationToken).ConfigureAwait(false);
         }
         finally
         {
             _fileLock.Release();
         }
     }
-
-    private string GetFileResultFilePath()
-        => Path.GetFullPath(Path.Combine(Path.GetTempPath(), FileName));
 
     public async ValueTask DisposeAsync()
     {

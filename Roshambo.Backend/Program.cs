@@ -24,6 +24,10 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(builder =>
         .AllowCredentials();
 }));
 
+builder.Services.AddOptions<StorageOptions>().Configure<IConfiguration>((opt, configuration) => configuration.GetSection("Storage").Bind(opt));
+builder.Services.AddSingleton<IStorageService, StorageService>();
+
+builder.Services.AddSingleton<ResultStorageService>();
 builder.Services.AddSingleton<StatisticsService>();
 builder.Services.AddTransient<RoshamboService>();
 
