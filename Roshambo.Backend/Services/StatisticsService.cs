@@ -20,7 +20,7 @@ internal sealed class StatisticsService : IAsyncDisposable
     /// <summary>
     /// Get statistics for global.
     /// </summary>
-    public Task<Statistics> GetGlobalStatisticsAsync(CancellationToken cancellationToken) 
+    public Task<Statistics> GetGlobalStatisticsAsync(CancellationToken cancellationToken)
         => GetStatisticsForAsync(Guid.Empty.ToString("d"), cancellationToken);
 
     /// <summary>
@@ -45,16 +45,19 @@ internal sealed class StatisticsService : IAsyncDisposable
             return UpdateScore(humanWinning, computerWinning, draw, winner);
         });
 
-        // Update value for global
-        string globalId = Guid.Empty.ToString("d");
-        _inMemoryCache.AddOrUpdate(globalId, addValueFactory: uid =>
-            {
-                return UpdateScore(0, 0, 0, winner);
-            }, updateValueFactory: (uid, old) =>
-            {
-                (ulong humanWinning, ulong computerWinning, ulong draw) = old;
-                return UpdateScore(humanWinning, computerWinning, draw, winner);
-            });
+        if (!string.IsNullOrEmpty(userId) && !string.Equals(userId, Guid.Empty.ToString("d"), StringComparison.OrdinalIgnoreCase))
+        {
+            // Update value for global
+            string globalId = Guid.Empty.ToString("d");
+            _inMemoryCache.AddOrUpdate(globalId, addValueFactory: uid =>
+                {
+                    return UpdateScore(0, 0, 0, winner);
+                }, updateValueFactory: (uid, old) =>
+                {
+                    (ulong humanWinning, ulong computerWinning, ulong draw) = old;
+                    return UpdateScore(humanWinning, computerWinning, draw, winner);
+                });
+        }
 
         await Task.Yield();
     }
@@ -93,6 +96,7 @@ internal sealed class StatisticsService : IAsyncDisposable
         {
             return _inMemoryCache![key];
         }
+        _logger.LogWarning("No data found for user id: {0}", userId);
         return (0, 0, 0);
     }
 

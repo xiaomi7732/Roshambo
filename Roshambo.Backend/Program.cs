@@ -41,6 +41,10 @@ app.MapGet("/", async (HttpContext context, CancellationToken cancellationToken,
         userIdCookieValue = Guid.NewGuid().ToString();
         logger.LogInformation("New User id: {0}", userIdCookieValue);
     }
+    else
+    {
+        logger.LogInformation("Existing user id: {0}", userIdCookieValue);
+    }
 
     Statistics statistics = await globalStat.GetGlobalStatisticsAsync(cancellationToken).ConfigureAwait(false);
     Statistics userStatistics = await globalStat.GetStatisticsForAsync(userIdCookieValue, cancellationToken).ConfigureAwait(false);
