@@ -14,6 +14,9 @@ const computerMoveImg = document.getElementById("computerMoveImg");
 const resetButton = document.getElementById("reset");
 const roundResultElement = document.getElementById("roundResult");
 
+const splashElement = document.getElementById("splash");
+const pageContentElement = document.getElementById("page-content");
+
 const DYNAMIC_MOVES = "dynamicMoves";
 
 let stopAt = undefined;
@@ -80,6 +83,9 @@ window.addEventListener("load", async () => {
         resetButton.addEventListener("click", () => {
             start();
         });
+
+        splashElement.style.display = "none";
+        pageContentElement.className = "page-content";
 
         start();
     } catch (ex) {
