@@ -1,5 +1,6 @@
 const backendBaseUrl = "https://localhost:7255";
 // const backendBaseUrl = "https://roshamboapp.azurewebsites.net";
+const USER_ID = "user-id";
 
 const humanWinningElement = document.getElementById("humanWinCount");
 const computerWinningElement = document.getElementById("computerWinCount");
@@ -43,11 +44,28 @@ const resources =
 
 window.addEventListener("load", async () => {
     try {
-        let statResponse = await fetch(backendBaseUrl + "/", {
-            credentials: 'include',
-        });
+        let userId = localStorage.getItem(USER_ID);
 
-        const stat = await statResponse.json();
+        try {
+            if (!userId) {
+                // First time user
+                console.log("First time player. Requesting a user id.");
+                const userIdResponse = await fetch(backendBaseUrl + "/");
+                const playerInfo = await userIdResponse.json();
+                userId = playerInfo.suggestedUserId.value;
+                localStorage.setItem(USER_ID, userId);
+            }
+            else {
+                console.log("Existing player.");
+            }
+        } catch (ex) {
+            console.error("Failed getting user id from the backend. Please contact the developer.");
+        }
+
+        const playerUrl = `${backendBaseUrl}/players/${userId}`;
+        const playerResponse = await fetch(playerUrl);
+
+        const stat = await playerResponse.json();
         console.log(JSON.stringify(stat));
         generateNextMoves(stat.actions.filter(a => a.rel === "action"));
 
@@ -116,9 +134,11 @@ function rotateComputerMove() {
 
 
 async function goWithAsync(action) {
-    const postResponse = await fetch(backendBaseUrl + action.href, {
+    const postResponse = await fetch(`${backendBaseUrl}${action.href}`, {
         method: action.method,
-        credentials: 'include',
+        body: JSON.stringify({
+            "userId": localStorage.getItem(USER_ID),
+        }),
         headers: {
             "Content-Type": "application/json"
         },
@@ -183,20 +203,4 @@ function highlightUserMove(action) {
             imgElement.src = resources[key].gray_img;
         }
     }
-}
-
-function getCookie(cname) {
-    let name = cname + "=";
-    let decodedCookie = decodeURIComponent(document.cookie);
-    let ca = decodedCookie.split(';');
-    for (let i = 0; i < ca.length; i++) {
-        let c = ca[i];
-        while (c.charAt(0) == ' ') {
-            c = c.substring(1);
-        }
-        if (c.indexOf(name) == 0) {
-            return c.substring(name.length, c.length);
-        }
-    }
-    return "";
 }
