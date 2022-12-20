@@ -4,9 +4,9 @@ namespace Roshambo.Services;
 
 internal class RoshamboService
 {
-    private readonly GlobalStatisticsService _statisticsService;
+    private readonly StatisticsService _statisticsService;
 
-    public RoshamboService(GlobalStatisticsService statisticsService)
+    public RoshamboService(StatisticsService statisticsService)
     {
         _statisticsService = statisticsService ?? throw new ArgumentNullException(nameof(statisticsService));
     }

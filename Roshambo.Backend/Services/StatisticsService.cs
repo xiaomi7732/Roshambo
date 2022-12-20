@@ -1,47 +1,31 @@
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
-using System.Text;
 using Roshambo.Models;
 
 namespace Roshambo.Services;
 
-internal sealed class GlobalStatisticsService : IAsyncDisposable
+internal sealed class StatisticsService : IAsyncDisposable
 {
     private static readonly SemaphoreSlim _fileLock = new SemaphoreSlim(1, 1);
-    private readonly ILogger<GlobalStatisticsService> _logger;
+    private readonly ILogger<StatisticsService> _logger;
     private const string FileName = "Result.csv"; // Human Win, Computer Win, Draw
 
     private ConcurrentDictionary<string, (ulong, ulong, ulong)>? _inMemoryCache = null;
 
-    public GlobalStatisticsService(ILogger<GlobalStatisticsService> logger)
+    public StatisticsService(ILogger<StatisticsService> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<GlobalStatistics> GetGlobalStatisticsAsync(CancellationToken cancellationToken)
-    {
-        (ulong humanWinning, ulong computerWinning, ulong drawCount) = await GetWinningCountsAsync(cancellationToken).ConfigureAwait(false);
-        GlobalStatistics statistics = new GlobalStatistics()
-        {
-            HumanWinning = humanWinning,
-            ComputerWinning = computerWinning,
-            Draw = drawCount,
-        };
-
-        return statistics;
-    }
+    /// <summary>
+    /// Get statistics for global.
+    /// </summary>
+    public Task<Statistics> GetGlobalStatisticsAsync(CancellationToken cancellationToken) 
+        => GetStatisticsForAsync(Guid.Empty.ToString("d"), cancellationToken);
 
     /// <summary>
-    /// Gets winning count for the global.
+    /// Increase 1 round for a given user.
     /// </summary>
-    public async Task<(ulong humanWinning, ulong computerWinning, ulong drawCount)> GetWinningCountsAsync(CancellationToken cancellationToken)
-    {
-        await EnsureCacheReadyAsync(cancellationToken).ConfigureAwait(false);
-
-        string key = Guid.Empty.ToString("d");
-        return _inMemoryCache![key];
-    }
-
     public async Task IncreaseAsync(string userId, RoshamboResult winner, CancellationToken cancellationToken)
     {
         await EnsureCacheReadyAsync(cancellationToken).ConfigureAwait(false);
@@ -73,6 +57,43 @@ internal sealed class GlobalStatisticsService : IAsyncDisposable
             });
 
         await Task.Yield();
+    }
+
+    /// <summary>
+    /// Get statistics for the current user.
+    /// </summary>
+    public async Task<Statistics> GetStatisticsForAsync(string userId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new ArgumentException($"'{nameof(userId)}' cannot be null or empty.", nameof(userId));
+        }
+
+        (ulong humanWinning, ulong computerWinning, ulong drawCount) = await GetWinningCountsAsync(userId, cancellationToken).ConfigureAwait(false);
+        Statistics statistics = new Statistics()
+        {
+            HumanWinning = humanWinning,
+            ComputerWinning = computerWinning,
+            Draw = drawCount,
+        };
+
+        return statistics;
+    }
+
+    /// <summary>
+    /// Gets winning count for the global.
+    /// </summary>
+    private async Task<(ulong humanWinning, ulong computerWinning, ulong drawCount)> GetWinningCountsAsync(string userId, CancellationToken cancellationToken)
+    {
+        await EnsureCacheReadyAsync(cancellationToken).ConfigureAwait(false);
+
+        string key = string.IsNullOrEmpty(userId) ? Guid.Empty.ToString("d") : userId;
+
+        if (_inMemoryCache!.ContainsKey(key))
+        {
+            return _inMemoryCache![key];
+        }
+        return (0, 0, 0);
     }
 
     private (ulong humanWinning, ulong computerWinning, ulong draw) UpdateScore(ulong originHumanWinning, ulong originComputerWinning, ulong originDraw, RoshamboResult winner)
@@ -128,9 +149,9 @@ internal sealed class GlobalStatisticsService : IAsyncDisposable
         {
             _logger.LogInformation(nameof(FileNotFoundException));
 
-            ConcurrentDictionary<string, (ulong, ulong, ulong)> newCache = new ConcurrentDictionary<string, (ulong, ulong, ulong)>();
-            newCache.TryAdd(Guid.Empty.ToString("d"), (0, 0, 0));
-            return newCache;
+            _inMemoryCache = new ConcurrentDictionary<string, (ulong, ulong, ulong)>();
+            _inMemoryCache.TryAdd(Guid.Empty.ToString("d"), (0, 0, 0));
+            return _inMemoryCache;
         }
         finally
         {

@@ -24,13 +24,13 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(builder =>
         .AllowCredentials();
 }));
 
-builder.Services.AddSingleton<GlobalStatisticsService>();
+builder.Services.AddSingleton<StatisticsService>();
 builder.Services.AddTransient<RoshamboService>();
 
 var app = builder.Build();
 app.UseCors();
 
-app.MapGet("/", async (HttpContext context, CancellationToken cancellationToken, GlobalStatisticsService globalStat, ILoggerFactory loggerFactory) =>
+app.MapGet("/", async (HttpContext context, CancellationToken cancellationToken, StatisticsService globalStat, ILoggerFactory loggerFactory) =>
 {
     ILogger logger = loggerFactory.CreateLogger("Get/");
     string? userIdCookieValue = context.Request.Cookies["user-id"];
@@ -42,16 +42,20 @@ app.MapGet("/", async (HttpContext context, CancellationToken cancellationToken,
         logger.LogInformation("New User id: {0}", userIdCookieValue);
     }
 
-    GlobalStatistics statistics = await globalStat.GetGlobalStatisticsAsync(cancellationToken).ConfigureAwait(false);
+    Statistics statistics = await globalStat.GetGlobalStatisticsAsync(cancellationToken).ConfigureAwait(false);
+    Statistics userStatistics = await globalStat.GetStatisticsForAsync(userIdCookieValue, cancellationToken).ConfigureAwait(false);
 
     context.Response.Cookies.Append("user-id", userIdCookieValue, new CookieOptions()
     {
         Secure = true,
         SameSite = SameSiteMode.None,
+        HttpOnly = false,
+        Expires = DateTimeOffset.UtcNow.AddYears(10),
     });
     return new
     {
         Statistics = statistics,
+        UserStatistics = userStatistics,
         Actions = GetRelActions(),
     };
 });
@@ -61,7 +65,7 @@ app.MapPost("/rounds/{actionName}", async (
     ILoggerFactory loggerFactory,
     [FromRoute] string actionName,
     [FromServices] RoshamboService roshamboService,
-    [FromServices] GlobalStatisticsService globalStatisticsService,
+    [FromServices] StatisticsService globalStatisticsService,
     CancellationToken cancellationToken) =>
 {
     ILogger logger = loggerFactory.CreateLogger("POST/Rounds");
@@ -73,7 +77,8 @@ app.MapPost("/rounds/{actionName}", async (
     if (Enum.TryParse<RoshamboOption>(actionName, ignoreCase: true, out RoshamboOption userOption))
     {
         (RoshamboResult roundResult, RoshamboOption computerMove) = await roshamboService.GoAsync(userId, userOption, cancellationToken);
-        GlobalStatistics globalStatistics = await globalStatisticsService.GetGlobalStatisticsAsync(cancellationToken).ConfigureAwait(false);
+        Statistics globalStatistics = await globalStatisticsService.GetGlobalStatisticsAsync(cancellationToken).ConfigureAwait(false);
+        Statistics userStatistics = await globalStatisticsService.GetStatisticsForAsync(userId, cancellationToken).ConfigureAwait(false);
 
         return new
         {
@@ -85,6 +90,7 @@ app.MapPost("/rounds/{actionName}", async (
             },
             Actions = GetRelActions(),
             Statistics = globalStatistics,
+            UserStatistics = userStatistics,
         };
     }
     throw new InvalidOperationException($"Invalid action name of {actionName}");
