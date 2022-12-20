@@ -10,7 +10,7 @@ internal sealed class StatisticsService : IAsyncDisposable
     private readonly ILogger<StatisticsService> _logger;
     private const string FileName = "Result.csv"; // Human Win, Computer Win, Draw
 
-    private ConcurrentDictionary<string, (ulong, ulong, ulong)>? _inMemoryCache = null;
+    private ConcurrentDictionary<UserId, (ulong, ulong, ulong)>? _inMemoryCache = null;
 
     public StatisticsService(ILogger<StatisticsService> logger)
     {
@@ -21,12 +21,12 @@ internal sealed class StatisticsService : IAsyncDisposable
     /// Get statistics for global.
     /// </summary>
     public Task<Statistics> GetGlobalStatisticsAsync(CancellationToken cancellationToken)
-        => GetStatisticsForAsync(Guid.Empty.ToString("d"), cancellationToken);
+        => GetStatisticsForAsync(UserId.Anonymous, cancellationToken);
 
     /// <summary>
     /// Increase 1 round for a given user.
     /// </summary>
-    public async Task IncreaseAsync(string userId, RoshamboResult winner, CancellationToken cancellationToken)
+    public async Task IncreaseAsync(UserId userId, RoshamboResult winner, CancellationToken cancellationToken)
     {
         await EnsureCacheReadyAsync(cancellationToken).ConfigureAwait(false);
 
@@ -45,11 +45,10 @@ internal sealed class StatisticsService : IAsyncDisposable
             return UpdateScore(humanWinning, computerWinning, draw, winner);
         });
 
-        if (!string.IsNullOrEmpty(userId) && !string.Equals(userId, Guid.Empty.ToString("d"), StringComparison.OrdinalIgnoreCase))
+        if (userId is not null && !userId.IsAnonymous())
         {
             // Update value for global
-            string globalId = Guid.Empty.ToString("d");
-            _inMemoryCache.AddOrUpdate(globalId, addValueFactory: uid =>
+            _inMemoryCache.AddOrUpdate(UserId.Anonymous, addValueFactory: uid =>
                 {
                     return UpdateScore(0, 0, 0, winner);
                 }, updateValueFactory: (uid, old) =>
@@ -65,13 +64,8 @@ internal sealed class StatisticsService : IAsyncDisposable
     /// <summary>
     /// Get statistics for the current user.
     /// </summary>
-    public async Task<Statistics> GetStatisticsForAsync(string userId, CancellationToken cancellationToken)
+    public async Task<Statistics> GetStatisticsForAsync(UserId userId, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrEmpty(userId))
-        {
-            throw new ArgumentException($"'{nameof(userId)}' cannot be null or empty.", nameof(userId));
-        }
-
         (ulong humanWinning, ulong computerWinning, ulong drawCount) = await GetWinningCountsAsync(userId, cancellationToken).ConfigureAwait(false);
         Statistics statistics = new Statistics()
         {
@@ -86,15 +80,13 @@ internal sealed class StatisticsService : IAsyncDisposable
     /// <summary>
     /// Gets winning count for the global.
     /// </summary>
-    private async Task<(ulong humanWinning, ulong computerWinning, ulong drawCount)> GetWinningCountsAsync(string userId, CancellationToken cancellationToken)
+    private async Task<(ulong humanWinning, ulong computerWinning, ulong drawCount)> GetWinningCountsAsync(UserId userId, CancellationToken cancellationToken)
     {
         await EnsureCacheReadyAsync(cancellationToken).ConfigureAwait(false);
 
-        string key = string.IsNullOrEmpty(userId) ? Guid.Empty.ToString("d") : userId;
-
-        if (_inMemoryCache!.ContainsKey(key))
+        if (_inMemoryCache!.ContainsKey(userId))
         {
-            return _inMemoryCache![key];
+            return _inMemoryCache![userId];
         }
         _logger.LogWarning("No data found for user id: {0}", userId);
         return (0, 0, 0);
@@ -120,7 +112,7 @@ internal sealed class StatisticsService : IAsyncDisposable
         return (originHumanWinning, originComputerWinning, originDraw);
     }
 
-    private async Task<ConcurrentDictionary<string, (ulong, ulong, ulong)>> EnsureCacheReadyAsync(CancellationToken cancellationToken)
+    private async Task<ConcurrentDictionary<UserId, (ulong, ulong, ulong)>> EnsureCacheReadyAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation(nameof(EnsureCacheReadyAsync));
 
@@ -133,10 +125,10 @@ internal sealed class StatisticsService : IAsyncDisposable
 
         // Create the cache
         await _fileLock.WaitAsync();
-        _inMemoryCache = new ConcurrentDictionary<string, (ulong, ulong, ulong)>();
+        _inMemoryCache = new ConcurrentDictionary<UserId, (ulong, ulong, ulong)>();
         try
         {
-            await foreach ((string key, ulong humanWinning, ulong computerWinning, ulong drawCount) in ReadLinesAsync(cancellationToken))
+            await foreach ((UserId key, ulong humanWinning, ulong computerWinning, ulong drawCount) in ReadLinesAsync(cancellationToken))
             {
                 _logger.LogInformation("Adding cache item: {0} {1} {2} {3}", key, humanWinning, computerWinning, drawCount);
                 _inMemoryCache.TryAdd(key, (humanWinning, computerWinning, drawCount));
@@ -144,7 +136,7 @@ internal sealed class StatisticsService : IAsyncDisposable
 
             if (_inMemoryCache.Count == 0)
             {
-                _inMemoryCache.TryAdd(Guid.Empty.ToString("d"), (0, 0, 0));
+                _inMemoryCache.TryAdd(UserId.Anonymous, (0, 0, 0));
             }
 
             return _inMemoryCache;
@@ -153,8 +145,8 @@ internal sealed class StatisticsService : IAsyncDisposable
         {
             _logger.LogInformation(nameof(FileNotFoundException));
 
-            _inMemoryCache = new ConcurrentDictionary<string, (ulong, ulong, ulong)>();
-            _inMemoryCache.TryAdd(Guid.Empty.ToString("d"), (0, 0, 0));
+            _inMemoryCache = new ConcurrentDictionary<UserId, (ulong, ulong, ulong)>();
+            _inMemoryCache.TryAdd(UserId.Anonymous, (0, 0, 0));
             return _inMemoryCache;
         }
         finally
@@ -163,7 +155,7 @@ internal sealed class StatisticsService : IAsyncDisposable
         }
     }
 
-    private async IAsyncEnumerable<(string key, ulong humanWinning, ulong computerWinning, ulong drawCount)> ReadLinesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+    private async IAsyncEnumerable<(UserId key, ulong humanWinning, ulong computerWinning, ulong drawCount)> ReadLinesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
     {
         string fileName = GetFileResultFilePath();
         using Stream inputtingStream = File.OpenRead(fileName);
@@ -178,16 +170,16 @@ internal sealed class StatisticsService : IAsyncDisposable
         yield return ParseLine(line);
     }
 
-    private (string key, ulong humanWinning, ulong computerWinning, ulong drawCount) ParseLine(string line)
+    private (UserId key, ulong humanWinning, ulong computerWinning, ulong drawCount) ParseLine(string line)
     {
         string[] resultTokens = line.Split(',', StringSplitOptions.RemoveEmptyEntries);
         if (resultTokens.Length == 3) // Old format
         {
-            return (Guid.Empty.ToString("d"), ulong.Parse(resultTokens[0]), ulong.Parse(resultTokens[1]), ulong.Parse(resultTokens[2]));
+            return (UserId.Anonymous, ulong.Parse(resultTokens[0]), ulong.Parse(resultTokens[1]), ulong.Parse(resultTokens[2]));
         }
         else if (resultTokens.Length == 4)
         {
-            return (resultTokens[0], ulong.Parse(resultTokens[1]), ulong.Parse(resultTokens[2]), ulong.Parse(resultTokens[3]));
+            return (new UserId(resultTokens[0]), ulong.Parse(resultTokens[1]), ulong.Parse(resultTokens[2]), ulong.Parse(resultTokens[3]));
         }
         throw new InvalidCastException($"Can't deserialize result line: {line}");
     }
@@ -202,16 +194,16 @@ internal sealed class StatisticsService : IAsyncDisposable
         await _fileLock.WaitAsync().ConfigureAwait(false);
         try
         {
-            Dictionary<string, (ulong, ulong, ulong)> dictClone = new Dictionary<string, (ulong, ulong, ulong)>(_inMemoryCache);
+            Dictionary<UserId, (ulong, ulong, ulong)> dictClone = new Dictionary<UserId, (ulong, ulong, ulong)>(_inMemoryCache);
 
             string writingFileName = Path.GetTempFileName();
             using (Stream outputStream = File.OpenWrite(writingFileName))
             using (StreamWriter writer = new StreamWriter(outputStream))
             {
                 string? line = null;
-                foreach (KeyValuePair<string, (ulong HumanWinning, ulong ComputerWinning, ulong Draw)> item in dictClone)
+                foreach (KeyValuePair<UserId, (ulong HumanWinning, ulong ComputerWinning, ulong Draw)> item in dictClone)
                 {
-                    line = string.Join(',', item.Key, item.Value.HumanWinning, item.Value.ComputerWinning, item.Value.Draw);
+                    line = string.Join(',', item.Key.Value, item.Value.HumanWinning, item.Value.ComputerWinning, item.Value.Draw);
                     await writer.WriteLineAsync(line).ConfigureAwait(false);
                 }
             }

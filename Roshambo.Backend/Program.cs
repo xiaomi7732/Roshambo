@@ -30,53 +30,51 @@ builder.Services.AddTransient<RoshamboService>();
 var app = builder.Build();
 app.UseCors();
 
-app.MapGet("/", async (HttpContext context, CancellationToken cancellationToken, StatisticsService globalStat, ILoggerFactory loggerFactory) =>
+// Get basic info.
+app.MapGet("/", async (
+    StatisticsService stat, 
+    ILoggerFactory loggerFactory, 
+    CancellationToken cancellationToken) =>
 {
     ILogger logger = loggerFactory.CreateLogger("Get/");
-    string? userIdCookieValue = context.Request.Cookies["user-id"];
-    logger.LogInformation("User id: {0}", userIdCookieValue);
 
-    if (userIdCookieValue is null)
-    {
-        userIdCookieValue = Guid.NewGuid().ToString();
-        logger.LogInformation("New User id: {0}", userIdCookieValue);
-    }
-    else
-    {
-        logger.LogInformation("Existing user id: {0}", userIdCookieValue);
-    }
+    Statistics statistics = await stat.GetGlobalStatisticsAsync(cancellationToken).ConfigureAwait(false);
 
-    Statistics statistics = await globalStat.GetGlobalStatisticsAsync(cancellationToken).ConfigureAwait(false);
-    Statistics userStatistics = await globalStat.GetStatisticsForAsync(userIdCookieValue, cancellationToken).ConfigureAwait(false);
-
-    context.Response.Cookies.Append("user-id", userIdCookieValue, new CookieOptions()
-    {
-        Secure = true,
-        SameSite = SameSiteMode.None,
-        HttpOnly = false,
-        Expires = DateTimeOffset.UtcNow.AddYears(10),
-    });
     return new
     {
         Statistics = statistics,
-        UserStatistics = userStatistics,
         Actions = GetRelActions(),
+        SuggestedUserId = new UserId(),
+    };
+});
+
+// Get user id.
+app.MapGet("/users/{uId}", async (
+    [FromRoute] string uId,
+    [FromServices] StatisticsService stat,
+    CancellationToken cancellationToken) =>
+{
+    UserId userId = new UserId(uId);
+    Statistics userStatistics = await stat.GetStatisticsForAsync(userId, cancellationToken).ConfigureAwait(false);
+
+    return new
+    {
+        userStatistics,
     };
 });
 
 app.MapPost("/rounds/{actionName}", async (
-    HttpContext context,
-    ILoggerFactory loggerFactory,
     [FromRoute] string actionName,
     [FromServices] RoshamboService roshamboService,
     [FromServices] StatisticsService globalStatisticsService,
+    [FromBody] RoundRequestBody requestBody,
+    ILoggerFactory loggerFactory,
     CancellationToken cancellationToken) =>
 {
     ILogger logger = loggerFactory.CreateLogger("POST/Rounds");
-    string? cookie = context.Request.Cookies["user-id"];
-    logger.LogInformation("POST cookie[user-id] = {0}", cookie);
 
-    string userId = cookie ?? Guid.Empty.ToString("d");
+    UserId userId = new UserId(requestBody.UserId);
+    logger.LogInformation("POST User-id = {0}", userId);
 
     if (Enum.TryParse<RoshamboOption>(actionName, ignoreCase: true, out RoshamboOption userOption))
     {

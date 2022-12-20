@@ -11,7 +11,7 @@ internal class RoshamboService
         _statisticsService = statisticsService ?? throw new ArgumentNullException(nameof(statisticsService));
     }
 
-    public async Task<(RoshamboResult, RoshamboOption computerAction)> GoAsync(string userId, RoshamboOption userOption, CancellationToken cancellationToken)
+    public async Task<(RoshamboResult, RoshamboOption computerAction)> GoAsync(UserId userId, RoshamboOption userOption, CancellationToken cancellationToken)
     {
         RoshamboOption computerMove = (RoshamboOption)new Random().Next(0, 3); // 0, 1, or 2.
 
