@@ -31,34 +31,28 @@ var app = builder.Build();
 app.UseCors();
 
 // Get basic info.
-app.MapGet("/", async (
-    StatisticsService stat, 
-    ILoggerFactory loggerFactory, 
-    CancellationToken cancellationToken) =>
+app.MapGet("/", () =>
 {
-    ILogger logger = loggerFactory.CreateLogger("Get/");
-
-    Statistics statistics = await stat.GetGlobalStatisticsAsync(cancellationToken).ConfigureAwait(false);
-
     return new
     {
-        Statistics = statistics,
-        Actions = GetRelActions(),
         SuggestedUserId = new UserId(),
     };
 });
 
 // Get user id.
-app.MapGet("/users/{uId}", async (
+app.MapGet("/players/{uId}", async (
     [FromRoute] string uId,
     [FromServices] StatisticsService stat,
     CancellationToken cancellationToken) =>
 {
     UserId userId = new UserId(uId);
     Statistics userStatistics = await stat.GetStatisticsForAsync(userId, cancellationToken).ConfigureAwait(false);
+    Statistics statistics = await stat.GetGlobalStatisticsAsync(cancellationToken).ConfigureAwait(false);
 
     return new
     {
+        Actions = GetRelActions(),
+        Statistics = statistics,
         userStatistics,
     };
 });
