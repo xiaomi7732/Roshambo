@@ -1,9 +1,14 @@
-// const backendBaseUrl = "http://localhost:5295";
+// const backendBaseUrl = "https://localhost:7255";
 const backendBaseUrl = "https://roshamboapp.azurewebsites.net";
 
 const humanWinningElement = document.getElementById("humanWinCount");
 const computerWinningElement = document.getElementById("computerWinCount");
 const drawElement = document.getElementById("draw");
+
+const userHumanWinningElement = document.getElementById("userHumanWinCount");
+const userComputerWinningElement = document.getElementById("userComputerWinCount");
+const userDrawElement = document.getElementById("userDraw");
+
 const computerMoveImg = document.getElementById("computerMoveImg");
 const resetButton = document.getElementById("reset");
 const roundResultElement = document.getElementById("roundResult");
@@ -38,13 +43,21 @@ const resources =
 
 window.addEventListener("load", async () => {
     try {
-        let statResponse = await fetch(backendBaseUrl + "/");
+        let statResponse = await fetch(backendBaseUrl + "/", {
+            credentials: 'include',
+        });
+
         const stat = await statResponse.json();
         console.log(JSON.stringify(stat));
         generateNextMoves(stat.actions.filter(a => a.rel === "action"));
+
         humanWinningElement.innerText = stat.statistics.humanWinning;
         computerWinningElement.innerText = stat.statistics.computerWinning;
         drawElement.innerText = stat.statistics.draw;
+
+        userHumanWinningElement.innerText = stat.userStatistics.humanWinning;
+        userComputerWinningElement.innerText = stat.userStatistics.computerWinning;
+        userDrawElement.innerText = stat.userStatistics.draw;
 
         resetButton.addEventListener("click", () => {
             start();
@@ -102,10 +115,10 @@ function rotateComputerMove() {
 }
 
 
-
 async function goWithAsync(action) {
     const postResponse = await fetch(backendBaseUrl + action.href, {
         method: action.method,
+        credentials: 'include',
         headers: {
             "Content-Type": "application/json"
         },
@@ -149,6 +162,10 @@ async function goWithAsync(action) {
     humanWinningElement.innerText = body.statistics.humanWinning;
     computerWinningElement.innerText = body.statistics.computerWinning;
     drawElement.innerText = body.statistics.draw;
+
+    userHumanWinningElement.innerText = body.userStatistics.humanWinning;
+    userComputerWinningElement.innerText = body.userStatistics.computerWinning;
+    userDrawElement.innerText = body.userStatistics.draw;
 }
 
 function highlightUserMove(action) {
@@ -166,4 +183,20 @@ function highlightUserMove(action) {
             imgElement.src = resources[key].gray_img;
         }
     }
+}
+
+function getCookie(cname) {
+    let name = cname + "=";
+    let decodedCookie = decodeURIComponent(document.cookie);
+    let ca = decodedCookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
 }
