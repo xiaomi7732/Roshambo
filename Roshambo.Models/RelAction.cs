@@ -2,11 +2,12 @@ namespace Roshambo.Models;
 
 public abstract class RelAction : RelModel
 {
-    public RelAction()
+    public RelAction(string urlBase)
     {
         Rel = "ready";
         Method = HttpMethod.Post.ToString().ToLowerInvariant();
         Key = Name;
+        ActionBase = $"{urlBase}/rounds/";
     }
 
     public abstract string Name { get; }
@@ -16,12 +17,19 @@ public abstract class RelAction : RelModel
 
 public class RockAction : RelAction
 {
+    public RockAction(string urlBase)
+        : base(urlBase)
+    { }
+
     public const string ActionName = "rock";
     public override string Name => ActionName;
 }
 
 public class PaperAction : RelAction
 {
+    public PaperAction(string urlBase)
+        : base(urlBase)
+    { }
     public const string ActionName = "paper";
 
     public override string Name => ActionName;
@@ -29,6 +37,9 @@ public class PaperAction : RelAction
 
 public class ScissorAction : RelAction
 {
+    public ScissorAction(string urlBase)
+        : base(urlBase)
+    { }
     public const string ActionName = "scissor";
 
     public override string Name => ActionName;

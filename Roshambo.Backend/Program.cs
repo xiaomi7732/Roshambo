@@ -57,17 +57,23 @@ app.MapGet("/", (HttpContext httpContext, ILoggerFactory loggerFactory) =>
 app.MapGet("/players/{uId}", async (
     [FromRoute] string uId,
     [FromServices] StatisticsService stat,
+    HttpContext httpContext,
     CancellationToken cancellationToken) =>
 {
     UserId userId = new UserId(uId);
     Statistics userStatistics = await stat.GetStatisticsForAsync(userId, cancellationToken).ConfigureAwait(false);
     Statistics statistics = await stat.GetGlobalStatisticsAsync(cancellationToken).ConfigureAwait(false);
 
+    HttpRequest request = httpContext.Request;
+    string urlBase = $"{request.Scheme}://{request.Host}";
+    string myUrl = $"{urlBase}{request.Path}";
+
     return new
     {
-        Actions = GetRelActions(),
+        Actions = GetRelActions(urlBase),
         Statistics = statistics,
         userStatistics,
+        Self = new SelfRel(myUrl, HttpMethod.Get),
     };
 });
 
@@ -76,6 +82,7 @@ app.MapPost("/rounds/{actionName}", async (
     [FromServices] RoshamboService roshamboService,
     [FromServices] StatisticsService globalStatisticsService,
     [FromBody] RoundRequestBody requestBody,
+    HttpContext httpContext,
     ILoggerFactory loggerFactory,
     CancellationToken cancellationToken) =>
 {
@@ -83,6 +90,9 @@ app.MapPost("/rounds/{actionName}", async (
 
     UserId userId = new UserId(requestBody.UserId);
     logger.LogInformation("POST User-id = {0}", userId);
+
+    HttpRequest request = httpContext.Request;
+    string urlBase = $"{request.Scheme}://{request.Host}";
 
     if (Enum.TryParse<RoshamboOption>(actionName, ignoreCase: true, out RoshamboOption userOption))
     {
@@ -95,10 +105,10 @@ app.MapPost("/rounds/{actionName}", async (
             Round = new RoundResult()
             {
                 Result = roundResult,
-                ComputerMove = computerMove.ToAction(),
-                UserMove = userOption.ToAction(),
+                ComputerMove = computerMove.ToAction(urlBase),
+                UserMove = userOption.ToAction(urlBase),
             },
-            Actions = GetRelActions(),
+            Actions = GetRelActions(urlBase),
             Statistics = globalStatistics,
             UserStatistics = userStatistics,
         };
@@ -108,12 +118,11 @@ app.MapPost("/rounds/{actionName}", async (
 
 app.Run();
 
-// TODO: Make this into its own service.
-RelAction[] GetRelActions()
+RelModel[] GetRelActions(string urlBase)
 {
-    return new RelAction[]{
-            new RockAction(),
-            new PaperAction(),
-            new ScissorAction(),
-        };
+    return new RelModel[]{
+        new RockAction(urlBase),
+        new PaperAction(urlBase),
+        new ScissorAction(urlBase),
+    };
 }
