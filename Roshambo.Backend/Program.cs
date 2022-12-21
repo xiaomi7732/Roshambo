@@ -35,11 +35,21 @@ var app = builder.Build();
 app.UseCors();
 
 // Get basic info.
-app.MapGet("/", () =>
+app.MapGet("/", (HttpContext httpContext, ILoggerFactory loggerFactory) =>
 {
+    ILogger logger = loggerFactory.CreateLogger("Get/");
+
+    HttpRequest request = httpContext.Request;
+    string myUrl = $"{request.Scheme}://{request.Host}{request.Path}";
+    logger.LogInformation("MyUrl: {0}", myUrl);
+
     return new
     {
         SuggestedUserId = new UserId(),
+        Self = new SelfRel(myUrl, HttpMethod.Get),
+        Next = new RelModel[]{
+            new CustomRel("ready", $"{request.Scheme}://{request.Host}/players/{{uid}}", HttpMethod.Get, "player"),
+        },
     };
 });
 

@@ -1,12 +1,17 @@
 namespace Roshambo.Models;
 
-public abstract class RelAction
+public abstract class RelAction : RelModel
 {
-    public string Rel { get; } = "action";
+    public RelAction()
+    {
+        Rel = "ready";
+        Method = HttpMethod.Post.ToString().ToLowerInvariant();
+        Key = Name;
+    }
+
     public abstract string Name { get; }
     public virtual string ActionBase { get; } = "/rounds/";
-    public string Href => $"{ActionBase}{Name}";
-    public string Method { get; } = "post";
+    public override string Href => $"{ActionBase}{Name}";
 }
 
 public class RockAction : RelAction
@@ -27,4 +32,16 @@ public class ScissorAction : RelAction
     public const string ActionName = "scissor";
 
     public override string Name => ActionName;
+}
+
+public class SelfRel : RelModel
+{
+    public SelfRel(string href, HttpMethod? method = null)
+    {
+        Rel = "self";
+        method ??= HttpMethod.Get;
+        Method = method.ToString().ToLowerInvariant();
+        Href = href;
+    }
+    public override string Href { get; }
 }
