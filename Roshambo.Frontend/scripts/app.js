@@ -70,7 +70,7 @@ window.addEventListener("load", async () => {
 
         const stat = await playerResponse.json();
         console.log(JSON.stringify(stat));
-        generateNextMoves(stat.actions.filter(a => a.rel === "action"));
+        generateNextMoves(stat.actions.filter(a => a.rel === "ready"));
 
         humanWinningElement.innerText = stat.statistics.humanWinning;
         computerWinningElement.innerText = stat.statistics.computerWinning;
@@ -98,10 +98,10 @@ function generateNextMoves(actionList) {
     const nextMoveContainerElement = document.getElementById(DYNAMIC_MOVES);
     actionList.forEach((item) => {
         let img = document.createElement('img');
-        img.src = resources[item.name].img;
+        img.src = resources[item.key].img;
         img.className = "move-image user-move";
-        img.setAttribute("key", item.name);
-        img.alt = "An image for " + item.name;
+        img.setAttribute("key", item.key);
+        img.alt = "An image for " + item.key;
         img.addEventListener("click", async () => {
             await goWithAsync(item);
         });
@@ -140,7 +140,7 @@ function rotateComputerMove() {
 
 
 async function goWithAsync(action) {
-    const postResponse = await fetch(`${backendBaseUrl}${action.href}`, {
+    const postResponse = await fetch(`${action.href}`, {
         method: action.method,
         body: JSON.stringify({
             "userId": localStorage.getItem(USER_ID),
@@ -154,7 +154,7 @@ async function goWithAsync(action) {
     console.log(JSON.stringify(body));
 
     highlightUserMove(null);
-    highlightUserMove(action.name);
+    highlightUserMove(action.key);
 
     const computerMoveName = body.round.computerMove.name;
     stopAt = computerMoveName;
