@@ -1,5 +1,5 @@
-const backendBaseUrl = "https://localhost:7255";
-// const backendBaseUrl = "https://roshamboapp.azurewebsites.net";
+// const backendBaseUrl = "https://localhost:7255";
+const backendBaseUrl = "https://roshamboapp.azurewebsites.net";
 const USER_ID = "user-id";
 
 const humanWinningElement = document.getElementById("humanWinCount");
@@ -45,6 +45,21 @@ const resources =
     },
 };
 
+const resultComments = {
+    "computerWinningWorld": {
+        "text": "The computer is winning the world!"
+    },
+    "playerWinningWorld": {
+        "text": "We collectively are winning the world, stay chill!"
+    },
+    "playerWinning": {
+        "text": "You are showing the computer who's the lord."
+    },
+    "computerWinning": {
+        "text": "The computer is beating someone up."
+    }
+}
+
 window.addEventListener("load", async () => {
     try {
         let userId = localStorage.getItem(USER_ID);
@@ -79,6 +94,9 @@ window.addEventListener("load", async () => {
         userHumanWinningElement.innerText = stat.userStatistics.humanWinning;
         userComputerWinningElement.innerText = stat.userStatistics.computerWinning;
         userDrawElement.innerText = stat.userStatistics.draw;
+
+        updateWorldBasedComment(stat.statistics.computerWinning, stat.statistics.humanWinning);
+        updatePlayerBasedComment(stat.userStatistics.computerWinning, stat.userStatistics.humanWinning);
 
         resetButton.addEventListener("click", () => {
             start();
@@ -192,6 +210,9 @@ async function goWithAsync(action) {
     userHumanWinningElement.innerText = body.userStatistics.humanWinning;
     userComputerWinningElement.innerText = body.userStatistics.computerWinning;
     userDrawElement.innerText = body.userStatistics.draw;
+
+    updateWorldBasedComment(body.statistics.computerWinning, body.statistics.humanWinning);
+    updatePlayerBasedComment(body.userStatistics.computerWinning, body.userStatistics.humanWinning);
 }
 
 function highlightUserMove(action) {
@@ -208,5 +229,25 @@ function highlightUserMove(action) {
         if (key !== action) {
             imgElement.src = resources[key].gray_img;
         }
+    }
+}
+
+function updateWorldBasedComment(computerWinning, humanWinning) {
+    const targetElement = document.getElementById("worldBasedComment");
+    if (computerWinning >= humanWinning) {
+        targetElement.innerText = resultComments.computerWinningWorld.text;
+    }
+    else {
+        targetElement.innerText = resultComments.playerWinningWorld.text;
+    }
+}
+
+function updatePlayerBasedComment(computerWinning, humanWinning) {
+    const targetElement = document.getElementById("playerBasedComment");
+    if (computerWinning >= humanWinning) {
+        targetElement.innerText = resultComments.computerWinning.text;
+    }
+    else {
+        targetElement.innerText = resultComments.playerWinning.text;
     }
 }
