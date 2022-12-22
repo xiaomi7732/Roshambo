@@ -108,8 +108,7 @@ button {
     cursor: pointer;
 }
 
-#splash
-{
+#splash {
     background-color: white;
     padding: var(--large-gap);
     display: flex;
@@ -121,4 +120,10 @@ button {
 
 .removed {
     display: none;
+}
+
+.result-comment {
+    font-weight: lighter;
+    font-style: italic;
+    font-size: 14px;
 }
