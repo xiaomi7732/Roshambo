@@ -28,6 +28,8 @@ builder.Services.AddOptions<StorageOptions>().Configure<IConfiguration>((opt, co
 builder.Services.AddSingleton<IStorageService, StorageService>();
 
 builder.Services.AddSingleton<ResultStorageService>();
+
+builder.Services.AddSingleton<UserDataUtility>(_ => UserDataUtility.Instance);
 builder.Services.AddSingleton<StatisticsService>();
 builder.Services.AddTransient<RoshamboService>();
 

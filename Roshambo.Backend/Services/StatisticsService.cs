@@ -7,15 +7,19 @@ internal sealed class StatisticsService : IAsyncDisposable
 {
     private static readonly SemaphoreSlim _fileLock = new SemaphoreSlim(1, 1);
     private readonly ResultStorageService _resultStore;
+    private readonly UserDataUtility _userDataUtility;
     private readonly ILogger<StatisticsService> _logger;
 
     private ConcurrentDictionary<UserId, (ulong, ulong, ulong)>? _inMemoryCache = null;
+    private Dictionary<UserId, (ulong, ulong, ulong)>? _dataBaseline = null;
 
     public StatisticsService(
         ResultStorageService resultStore,
+        UserDataUtility userDataUtility,
         ILogger<StatisticsService> logger)
     {
         _resultStore = resultStore ?? throw new ArgumentNullException(nameof(resultStore));
+        _userDataUtility = userDataUtility ?? throw new ArgumentNullException(nameof(userDataUtility));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -86,9 +90,22 @@ internal sealed class StatisticsService : IAsyncDisposable
     {
         await EnsureCacheReadyAsync(cancellationToken).ConfigureAwait(false);
 
-        if (_inMemoryCache!.ContainsKey(userId))
+        if (_inMemoryCache is null || _dataBaseline is null)
         {
-            return _inMemoryCache![userId];
+            throw new InvalidOperationException("In memory cache and data baseline should have been created.");
+        }
+
+        Dictionary<UserId, (ulong, ulong, ulong)> merged = _userDataUtility.MergeData(_inMemoryCache, _dataBaseline);
+
+        _logger.LogInformation("Merged:");
+        foreach (var item in merged)
+        {
+            _logger.LogInformation("{key}: {value1} {value2} {value3}", item.Key, item.Value.Item1, item.Value.Item2, item.Value.Item3);
+        }
+
+        if (merged.ContainsKey(userId))
+        {
+            return merged[userId];
         }
         _logger.LogWarning("No data found for user id: {0}", userId);
         return (0, 0, 0);
@@ -127,13 +144,14 @@ internal sealed class StatisticsService : IAsyncDisposable
 
         // Create the cache
         await _fileLock.WaitAsync();
+        _dataBaseline = new Dictionary<UserId, (ulong, ulong, ulong)>();
         _inMemoryCache = new ConcurrentDictionary<UserId, (ulong, ulong, ulong)>();
         try
         {
             await foreach ((UserId key, ulong humanWinning, ulong computerWinning, ulong drawCount) in ReadLinesAsync(cancellationToken))
             {
                 _logger.LogInformation("Adding cache item: {0} {1} {2} {3}", key, humanWinning, computerWinning, drawCount);
-                _inMemoryCache.TryAdd(key, (humanWinning, computerWinning, drawCount));
+                _dataBaseline.TryAdd(key, (humanWinning, computerWinning, drawCount));
             }
 
             if (_inMemoryCache.Count == 0)
@@ -157,10 +175,10 @@ internal sealed class StatisticsService : IAsyncDisposable
         }
     }
 
-    private IAsyncEnumerable<(UserId key, ulong humanWinning, ulong computerWinning, ulong drawCount)> ReadLinesAsync(CancellationToken cancellationToken) 
+    private IAsyncEnumerable<(UserId key, ulong humanWinning, ulong computerWinning, ulong drawCount)> ReadLinesAsync(CancellationToken cancellationToken)
         => _resultStore.LoadResultAsync(cancellationToken);
 
-    private async Task WriterAsync(CancellationToken cancellationToken)
+    private async Task WriteAsync(CancellationToken cancellationToken)
     {
         if (_inMemoryCache is null)
         {
@@ -170,9 +188,18 @@ internal sealed class StatisticsService : IAsyncDisposable
         await _fileLock.WaitAsync().ConfigureAwait(false);
         try
         {
-            Dictionary<UserId, (ulong, ulong, ulong)> dictClone = new Dictionary<UserId, (ulong, ulong, ulong)>(_inMemoryCache);
+            Dictionary<UserId, (ulong, ulong, ulong)> baseData = new Dictionary<UserId, (ulong, ulong, ulong)>();
+            await foreach ((UserId UserId, ulong HumanWinning, ulong ComputerWinning, ulong Draw) item in _resultStore.LoadResultAsync(cancellationToken))
+            {
+                baseData.Add(item.UserId, (item.HumanWinning, item.ComputerWinning, item.Draw));
+            }
+            Dictionary<UserId, (ulong, ulong, ulong)> merged = _userDataUtility.MergeData(_inMemoryCache, baseData);
 
-            await _resultStore.SaveResultAsync(dictClone.Select(item => (item.Key, item.Value.Item1, item.Value.Item2, item.Value.Item3)), cancellationToken).ConfigureAwait(false);
+            await _resultStore.SaveResultAsync(merged.Select(item => (item.Key, item.Value.Item1, item.Value.Item2, item.Value.Item3)), cancellationToken).ConfigureAwait(false);
+        }
+        catch(Exception ex)
+        {
+            _logger.LogError(ex, "Failed persistent data for this session.");
         }
         finally
         {
@@ -182,6 +209,6 @@ internal sealed class StatisticsService : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        await WriterAsync(default).ConfigureAwait(false);
+        await WriteAsync(default).ConfigureAwait(false);
     }
 }
