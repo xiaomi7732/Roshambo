@@ -26,6 +26,8 @@ let stopAt = undefined;
 let computerMoveCursor = 0;
 let rotationStopper = -1;
 
+let autoRestartTimerHandle = null;
+
 const resources =
 {
     "rock": {
@@ -102,6 +104,7 @@ function generateNextMoves(actionList) {
 }
 
 function start() {
+    stopAutoRestart();
     highlightUserMove(null);
     roundResultElement.innerText = null;
     stopAt = undefined;
@@ -133,7 +136,7 @@ function rotateComputerMove() {
 async function goWithAsync(action) {
     const body = await roshamboAPI.execute(action.key);
     console.log(JSON.stringify(body));
-
+    stopAutoRestart();
     highlightUserMove(null);
     highlightUserMove(action.key);
 
@@ -167,21 +170,9 @@ async function goWithAsync(action) {
 
     updateStatistics(body.statistics, body.userStatistics);
 
-    startTimer(5);
+    startAutoRestart(5);
 }
 
-function startTimer(invokeOnSeconds) {
-    const autoRestartPromptElement = document.getElementById("autoRestartPrompt");
-    autoRestartPromptElement.innerText = `Auto start another round in ${invokeOnSeconds} seconds`;
-    let timer = setInterval(() => {
-        autoRestartPromptElement.innerText = `Auto start another round in ${invokeOnSeconds} seconds`;
-        if (invokeOnSeconds-- === 0) {
-            autoRestartPromptElement.innerText = null;
-            start();
-            clearInterval(timer);
-        }
-    }, 500);
-}
 
 function updateStatistics(statistics, userStatistics) {
     humanWinningElement.innerText = statistics.humanWinning;
@@ -231,4 +222,22 @@ function updatePlayerBasedComment(computerWinning, humanWinning) {
     else {
         targetElement.innerText = resultComments.playerWinning.text;
     }
+}
+
+function startAutoRestart(invokeOnSeconds) {
+    const autoRestartPromptElement = document.getElementById("autoRestartPrompt");
+    autoRestartPromptElement.innerText = `Auto start another round in ${invokeOnSeconds} seconds`;
+    autoRestartTimerHandle = setInterval(() => {
+        autoRestartPromptElement.innerText = `Auto start another round in ${invokeOnSeconds} seconds`;
+        if (invokeOnSeconds-- === 0) {
+            autoRestartPromptElement.innerText = null;
+            start();
+        }
+    }, 500);
+}
+
+function stopAutoRestart(){
+    clearInterval(autoRestartTimerHandle);
+    const autoRestartPromptElement = document.getElementById("autoRestartPrompt");
+    autoRestartPromptElement.innerText = null;
 }
