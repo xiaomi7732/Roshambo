@@ -53,7 +53,7 @@ export class Roshambo {
             actionStore.actions = playerInfo.next;
 
             if (localStorage.getItem(USER_ID) === null) {
-                userId = playerInfo.suggestedUserId.value;
+                const userId = playerInfo.suggestedUserId.value;
                 localStorage.setItem(USER_ID, userId);
             }
             return playerInfo;
