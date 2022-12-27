@@ -166,6 +166,21 @@ async function goWithAsync(action) {
     }, 100);
 
     updateStatistics(body.statistics, body.userStatistics);
+
+    startTimer(5);
+}
+
+function startTimer(invokeOnSeconds) {
+    const autoRestartPromptElement = document.getElementById("autoRestartPrompt");
+    autoRestartPromptElement.innerText = `Auto start another round in ${invokeOnSeconds} seconds`;
+    let timer = setInterval(() => {
+        autoRestartPromptElement.innerText = `Auto start another round in ${invokeOnSeconds} seconds`;
+        if (invokeOnSeconds-- === 0) {
+            autoRestartPromptElement.innerText = null;
+            start();
+            clearInterval(timer);
+        }
+    }, 500);
 }
 
 function updateStatistics(statistics, userStatistics) {
