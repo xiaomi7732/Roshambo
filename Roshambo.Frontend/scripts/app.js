@@ -1,6 +1,9 @@
+import { Roshambo } from './modules/roshambo.codewithsaar.mjs';
+import * as ActionStore from './modules/actionStore.codewithsaar.mjs'
+
 // const backendBaseUrl = "https://localhost:7255";
 const backendBaseUrl = "https://roshamboapp.azurewebsites.net";
-const USER_ID = "user-id";
+const roshamboAPI = new Roshambo(backendBaseUrl);
 
 const humanWinningElement = document.getElementById("humanWinCount");
 const computerWinningElement = document.getElementById("computerWinCount");
@@ -62,41 +65,11 @@ const resultComments = {
 
 window.addEventListener("load", async () => {
     try {
-        let userId = localStorage.getItem(USER_ID);
-
-        try {
-            if (!userId) {
-                // First time user
-                console.log("First time player. Requesting a user id.");
-                const userIdResponse = await fetch(backendBaseUrl + "/");
-                const playerInfo = await userIdResponse.json();
-                userId = playerInfo.suggestedUserId.value;
-                localStorage.setItem(USER_ID, userId);
-            }
-            else {
-                console.log("Existing player.");
-            }
-        } catch (ex) {
-            console.error("Failed getting user id from the backend. Please contact the developer.");
-        }
-
-        const playerUrl = `${backendBaseUrl}/players/${userId}`;
-        const playerResponse = await fetch(playerUrl);
-
-        const stat = await playerResponse.json();
+        const stat = await roshamboAPI.signIn();
         console.log(JSON.stringify(stat));
-        generateNextMoves(stat.actions.filter(a => a.rel === "ready"));
+        generateNextMoves(ActionStore.instance.actions.filter(a => a.rel === "ready"));
 
-        humanWinningElement.innerText = stat.statistics.humanWinning;
-        computerWinningElement.innerText = stat.statistics.computerWinning;
-        drawElement.innerText = stat.statistics.draw;
-
-        userHumanWinningElement.innerText = stat.userStatistics.humanWinning;
-        userComputerWinningElement.innerText = stat.userStatistics.computerWinning;
-        userDrawElement.innerText = stat.userStatistics.draw;
-
-        updateWorldBasedComment(stat.statistics.computerWinning, stat.statistics.humanWinning);
-        updatePlayerBasedComment(stat.userStatistics.computerWinning, stat.userStatistics.humanWinning);
+        updateStatistics(stat.statistics, stat.userStatistics);
 
         resetButton.addEventListener("click", () => {
             start();
@@ -158,17 +131,7 @@ function rotateComputerMove() {
 
 
 async function goWithAsync(action) {
-    const postResponse = await fetch(`${action.href}`, {
-        method: action.method,
-        body: JSON.stringify({
-            "userId": localStorage.getItem(USER_ID),
-        }),
-        headers: {
-            "Content-Type": "application/json"
-        },
-    })
-
-    const body = await postResponse.json();
+    const body = await roshamboAPI.execute(action.key);
     console.log(JSON.stringify(body));
 
     highlightUserMove(null);
@@ -202,17 +165,20 @@ async function goWithAsync(action) {
         computerMoveImg.src = computerMoveResource.img;
     }, 100);
 
-    // TODO: Reuse
-    humanWinningElement.innerText = body.statistics.humanWinning;
-    computerWinningElement.innerText = body.statistics.computerWinning;
-    drawElement.innerText = body.statistics.draw;
+    updateStatistics(body.statistics, body.userStatistics);
+}
 
-    userHumanWinningElement.innerText = body.userStatistics.humanWinning;
-    userComputerWinningElement.innerText = body.userStatistics.computerWinning;
-    userDrawElement.innerText = body.userStatistics.draw;
+function updateStatistics(statistics, userStatistics) {
+    humanWinningElement.innerText = statistics.humanWinning;
+    computerWinningElement.innerText = statistics.computerWinning;
+    drawElement.innerText = statistics.draw;
 
-    updateWorldBasedComment(body.statistics.computerWinning, body.statistics.humanWinning);
-    updatePlayerBasedComment(body.userStatistics.computerWinning, body.userStatistics.humanWinning);
+    userHumanWinningElement.innerText = userStatistics.humanWinning;
+    userComputerWinningElement.innerText = userStatistics.computerWinning;
+    userDrawElement.innerText = userStatistics.draw;
+
+    updateWorldBasedComment(statistics.computerWinning, statistics.humanWinning);
+    updatePlayerBasedComment(userStatistics.computerWinning, userStatistics.humanWinning);
 }
 
 function highlightUserMove(action) {
