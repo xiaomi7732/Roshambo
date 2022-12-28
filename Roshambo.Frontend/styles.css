@@ -84,6 +84,8 @@ h2 {
 /* Action Container */
 #actionContainer {
     margin-bottom: var(--large-gap);
+    display: flex;
+    flex-direction: column;
 }
 
 .move-image {
@@ -126,4 +128,16 @@ button {
     font-weight: lighter;
     font-style: italic;
     font-size: 14px;
+}
+
+#dynamicMoves {
+    display: flex;
+    flex-wrap: nowrap;
+}
+
+#dynamicMoves>img {
+    flex-shrink: 5;
+    width: 100%;
+    min-width: 0;
+    object-fit: scale-down;
 }
