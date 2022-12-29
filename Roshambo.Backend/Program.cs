@@ -9,6 +9,9 @@ builder.Logging.AddSimpleConsole(opt =>
     opt.SingleLine = true;
 });
 
+builder.Services.AddApplicationInsightsTelemetry();
+builder.Services.AddServiceProfiler();
+
 builder.Services.Configure<JsonOptions>(options =>
 {
     options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
