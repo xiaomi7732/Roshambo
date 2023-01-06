@@ -1,5 +1,11 @@
+using System.Text.Json.Serialization;
+
 namespace Roshambo.Models;
 
+[JsonDerivedType(typeof(RockAction))]
+[JsonDerivedType(typeof(PaperAction))]
+[JsonDerivedType(typeof(ScissorAction))]
+[JsonDerivedType(typeof(CustomRel))]
 public abstract class RelModel
 {
     /// <summary>
