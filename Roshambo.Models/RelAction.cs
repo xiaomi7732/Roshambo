@@ -6,43 +6,48 @@ public abstract class RelAction : RelModel
     {
         Rel = "ready";
         Method = HttpMethod.Post.ToString().ToLowerInvariant();
-        Key = Name;
         ActionBase = $"{urlBase}/rounds/";
     }
 
-    public abstract string Name { get; }
-    public virtual string ActionBase { get; } = "/rounds/";
-    public override string Href => $"{ActionBase}{Name}";
+    public string Key { get; init; } = "unknown";
+    protected string ActionBase { get; } = "/rounds/";
+    public override string Href
+    {
+        get => $"{ActionBase}{Key}";
+        init => throw new InvalidOperationException("Can't specify Href for a rel action.");
+    }
 }
 
 public class RockAction : RelAction
 {
     public RockAction(string urlBase)
         : base(urlBase)
-    { }
+    {
+        Key = ActionName;
+    }
 
     public const string ActionName = "rock";
-    public override string Name => ActionName;
 }
 
 public class PaperAction : RelAction
 {
     public PaperAction(string urlBase)
         : base(urlBase)
-    { }
+    {
+        Key = ActionName;
+    }
     public const string ActionName = "paper";
 
-    public override string Name => ActionName;
 }
 
 public class ScissorAction : RelAction
 {
     public ScissorAction(string urlBase)
         : base(urlBase)
-    { }
+    {
+        Key = ActionName;
+    }
     public const string ActionName = "scissor";
-
-    public override string Name => ActionName;
 }
 
 public class SelfRel : RelModel
@@ -54,5 +59,12 @@ public class SelfRel : RelModel
         Method = method.ToString().ToLowerInvariant();
         Href = href;
     }
-    public override string Href { get; }
+}
+
+public class ReadyRel : RelModel
+{
+    public ReadyRel()
+    {
+        Rel = "ready";
+    }
 }

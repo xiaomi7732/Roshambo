@@ -53,7 +53,7 @@ app.MapGet("/", (HttpContext httpContext, ILoggerFactory loggerFactory) =>
         SuggestedUserId = new UserId(),
         Self = new SelfRel(myUrl, HttpMethod.Get),
         Next = new RelModel[]{
-            new CustomRel("ready", $"{request.Scheme}://{request.Host}/players/{{uid}}", HttpMethod.Get, "player"),
+            new ReadyRel(){Href=$"{request.Scheme}://{request.Host}/players/{{uid}}"},
         },
     };
 });
