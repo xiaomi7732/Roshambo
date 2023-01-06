@@ -16,6 +16,9 @@ public abstract class RelAction : RelModel
         get => $"{ActionBase}{Key}";
         init => throw new InvalidOperationException("Can't specify Href for a rel action.");
     }
+
+    [Obsolete("Use Key instead. Remove this after the client is updated.")]
+    public string Name => Key;
 }
 
 public class RockAction : RelAction

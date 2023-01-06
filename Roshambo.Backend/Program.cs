@@ -48,7 +48,7 @@ app.MapGet("/", (HttpContext httpContext, ILoggerFactory loggerFactory) =>
     string myUrl = $"{request.Scheme}://{request.Host}{request.Path}";
     logger.LogInformation("MyUrl: {0}", myUrl);
 
-    return new
+    return new InitialResponse()
     {
         SuggestedUserId = new UserId(),
         Self = new SelfRel(myUrl, HttpMethod.Get),
@@ -73,11 +73,11 @@ app.MapGet("/players/{uId}", async (
     string urlBase = $"{request.Scheme}://{request.Host}";
     string myUrl = $"{urlBase}{request.Path}";
 
-    return new
+    return new RoundResponse
     {
-        Actions = GetRelActions(urlBase),
+        Next = GetRelActions(urlBase),
         Statistics = statistics,
-        userStatistics,
+        UserStatistics = userStatistics,
         Self = new SelfRel(myUrl, HttpMethod.Get),
     };
 });
@@ -105,7 +105,7 @@ app.MapPost("/rounds/{actionName}", async (
         Statistics globalStatistics = await globalStatisticsService.GetGlobalStatisticsAsync(cancellationToken).ConfigureAwait(false);
         Statistics userStatistics = await globalStatisticsService.GetStatisticsForAsync(userId, cancellationToken).ConfigureAwait(false);
 
-        return new
+        return new RoundResponse
         {
             Round = new RoundResult()
             {
@@ -113,7 +113,7 @@ app.MapPost("/rounds/{actionName}", async (
                 ComputerMove = computerMove.ToAction(urlBase),
                 UserMove = userOption.ToAction(urlBase),
             },
-            Actions = GetRelActions(urlBase),
+            Next = GetRelActions(urlBase),
             Statistics = globalStatistics,
             UserStatistics = userStatistics,
         };
