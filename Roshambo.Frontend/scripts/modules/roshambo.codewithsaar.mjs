@@ -20,7 +20,7 @@ export class Roshambo {
 
         const playerSignInResponse = await fetch(playerSignInUrl);
         const playerStatus = await playerSignInResponse.json();
-        actionStore.actions = playerStatus.actions;
+        actionStore.actions = playerStatus.next;
         return playerStatus;
     }
 
