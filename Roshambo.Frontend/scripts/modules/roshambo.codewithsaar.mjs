@@ -37,7 +37,7 @@ export class Roshambo {
         });
 
         const result = await goResponse.json();
-        actionStore.actions = result.actions;
+        actionStore.actions = result.next;
         return result;
     }
 

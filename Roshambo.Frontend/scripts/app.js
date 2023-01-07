@@ -140,7 +140,7 @@ async function goWithAsync(action) {
     highlightUserMove(null);
     highlightUserMove(action.key);
 
-    const computerMoveName = body.round.computerMove.name;
+    const computerMoveName = body.round.computerMove.key;
     stopAt = computerMoveName;
 
     const roundResult = body.round.result;
